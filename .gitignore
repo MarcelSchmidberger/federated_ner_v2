@@ -22,4 +22,5 @@ docs/_modules
 **/pip-wheel-metadata
 notebooks/data*
 src/data/MNIST/*
-notebooks/*
+notebooks/
+embeddings/
