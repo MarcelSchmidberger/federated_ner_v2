@@ -21,3 +21,5 @@ docs/_modules
 .vscode/
 **/pip-wheel-metadata
 notebooks/data*
+src/data/MNIST/*
+notebooks/*

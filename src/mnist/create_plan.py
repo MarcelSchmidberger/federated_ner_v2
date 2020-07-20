@@ -90,7 +90,7 @@ gatewayWsUrl = "127.0.0.1:5000"
 grid = StaticFLClient(id="test", address=gatewayWsUrl, secure=False)
 grid.connect()# These name/version you use in worker
 import time;
-name = "mnist" + str(time.time())
+name = "mnist2"
 version = "1.0.0"
 
 client_config = {
