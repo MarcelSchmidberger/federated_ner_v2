@@ -69,12 +69,10 @@ def training_plan(X, y, batch_size, lr, model_params):
 
 # Dummy input parameters to make the trace
 model_params = [param.data for param in model.parameters()]  # raw tensors instead of nn.Parameter
-X = th.randn(3, 28 * 28)
-y = nn.functional.one_hot(th.tensor([1, 2, 3]), 10)
 lr = th.tensor([0.01])
 batch_size = th.tensor([3.0])
 
-_ = training_plan.build(X, y, batch_size, lr, model_params, trace_autograd=True)
+_ = training_plan.build(X, Y, batch_size, lr, model_params, trace_autograd=True)
 
 
 training_plan.base_framework = TranslationTarget.TENSORFLOW_JS.value
