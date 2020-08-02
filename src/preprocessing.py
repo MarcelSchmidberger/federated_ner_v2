@@ -15,7 +15,7 @@ def read_files(filenames, *, encoding="UTF8"):
                         sentence = []
                     continue
                 splits = line.split(' ')
-                sentence.append([splits[0], splits[-1]])
+                sentence.append([splits[0].rstrip() , splits[-1].rstrip() ])
 
             if len(sentence) > 0:
                 sentences.append(sentence)

@@ -14,7 +14,6 @@ syft.egg-info/
 *.swp
 *.swo
 *.ipynb_checkpoints*
-venv/
 **.pytest_cache/
 docs/_modules
 .coverage

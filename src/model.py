@@ -21,17 +21,19 @@ def set_model_params(module, params_list, start_param_idx=0):
 
 
 class Net(nn.Module):
-    def __init__(self, word_embeddings=None):
+    def __init__(self, num_classes, word_embeddings=None, ):
         super(Net, self).__init__()
+        self.num_classes = num_classes
         self.embedding_dim = 300
         self.embedding = nn.Embedding.from_pretrained(word_embeddings)
-        self.fc1 = nn.Linear(300, 3)
-        self.fc2 = nn.Linear(3, 2)
+        self.fc1 = nn.Linear(300, 30)
+        self.fc2 = nn.Linear(30, self.num_classes)
 
     def forward(self, x):
         x = self.embedding(x)
-        x = F.relu(self.fc1(x))
+        x = self.fc1(x)
         x = self.fc2(x)
+        print("X-Shape:", x.shape)
         return x
 
 def softmax_cross_entropy_with_logits(logits, targets, batch_size):
@@ -49,4 +51,6 @@ def softmax_cross_entropy_with_logits(logits, targets, batch_size):
 
 
 def naive_sgd(param, **kwargs):
-    return param - kwargs['lr'] * param.grad
+    #print(type(kwargs['lr']), type(param.grad))
+    #print(param)
+    return param # - kwargs['lr'] * param.grad

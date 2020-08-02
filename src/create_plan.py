@@ -9,6 +9,7 @@ from syft.execution.translation import TranslationTarget
 
 import torch as th
 from torch import nn
+from torch.utils.data import DataLoader
 
 import os
 import websockets
@@ -17,6 +18,7 @@ import requests
 
 from model import Net, set_model_params, naive_sgd, softmax_cross_entropy_with_logits
 from preprocessing import read_files, prepare_embeddings, text_to_indices, pad_sentences
+#from dataset import CDRDataset, UniqueSentenceLengthSampler
 
 
 sy.make_hook(globals())
@@ -24,17 +26,29 @@ sy.make_hook(globals())
 hook.local_worker.framework = None
 th.random.manual_seed(1)
 
-train_data_path = "/home/marcel/voize/voize-react-native/nlp/train"
+train_data_path = "data/ner/train"
 
 train_sentences = read_files([os.path.join(train_data_path, p) for p in os.listdir(train_data_path)])
 word_embeddings, word2Idx, label2Idx, idx2Label = prepare_embeddings(train_sentences,"../embeddings/german.model" )
+print(len(word_embeddings))
 X,Y = text_to_indices(train_sentences, word2Idx, label2Idx)
 X,Y = pad_sentences(X,Y, word2Idx, label2Idx)
+# tag only single words not connected sentences
+X = X.flatten()
+Y = Y.flatten()
+
+num_classes = len(label2Idx.keys())
+lr = th.tensor([0.01])
+batch_size = th.tensor(len(X))
 
 
+one_hot = th.nn.functional.one_hot(Y, num_classes)
 
-model = Net(th.FloatTensor(word_embeddings))
+#dataset_args = { 'pad_sentences': False }
+    
+#dataset = CDRDataset(X, Y, word2Idx, label2Idx, **dataset_args)
 
+#dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
 
 @sy.func2plan()
 def training_plan(X, y, batch_size, lr, model_params):
@@ -48,14 +62,17 @@ def training_plan(X, y, batch_size, lr, model_params):
     loss = softmax_cross_entropy_with_logits(logits, y, batch_size)
 
     # backprop
-    loss.backward()
-
+    print("loss:", type(loss), loss.grad)
+    #loss.backward()
+    print("loss:", type(loss), loss.grad)
+    #loss.retain_grad() 
+    print("loss:", type(loss), loss.grad)
     # step
-    updated_params = [
-        naive_sgd(param, lr=lr)
-        for param in model_params
-    ]
-    
+    #updated_params = [
+    #    naive_sgd(param, requires_grad=True, lr=lr)
+    #    for param in model_params
+    #]
+    updated_params = model_params
     # accuracy
     pred = th.argmax(logits, dim=1)
     target = th.argmax(y, dim=1)
@@ -68,14 +85,15 @@ def training_plan(X, y, batch_size, lr, model_params):
     )
 
 # Dummy input parameters to make the trace
-model_params = [param.data for param in model.parameters()]  # raw tensors instead of nn.Parameter
-lr = th.tensor([0.01])
-batch_size = th.tensor([3.0])
+model = Net(num_classes, th.FloatTensor(word_embeddings))
 
-_ = training_plan.build(X, Y, batch_size, lr, model_params, trace_autograd=True)
+model_params = [th.tensor(param.data, requires_grad=True) for param in model.parameters()]  # raw tensors instead of nn.Parameter
 
+_ = training_plan.build(X, one_hot, batch_size, lr, model_params, trace_autograd=True)
 
-training_plan.base_framework = TranslationTarget.TENSORFLOW_JS.value
+print("Build Successful")
+
+#training_plan.base_framework = TranslationTarget.TENSORFLOW_JS.value
 training_plan.base_framework = TranslationTarget.PYTORCH.value
 
 @sy.func2plan()
@@ -98,8 +116,7 @@ async def sendWsMessage(data):
 gatewayWsUrl = "127.0.0.1:5000"
 grid = StaticFLClient(id="test", address=gatewayWsUrl, secure=False)
 grid.connect()# These name/version you use in worker
-import time;
-name = "mnist2"
+name = "ner"
 version = "1.0.0"
 
 client_config = {
